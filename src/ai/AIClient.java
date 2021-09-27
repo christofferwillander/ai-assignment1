@@ -212,6 +212,7 @@ public class AIClient implements Runnable
      */
     public int getMove(GameState currentBoard)
     {
+        int bestMove;
         boolean isMaxPlayer = false;
         int depth = 6;
 
@@ -220,7 +221,8 @@ public class AIClient implements Runnable
             isMaxPlayer = true;
         }
 
-        return findBestMove(currentBoard, depth, isMaxPlayer);
+        bestMove = findBestMove(currentBoard, depth, isMaxPlayer);
+        return bestMove;
     }
 
     /**
@@ -254,34 +256,43 @@ public class AIClient implements Runnable
         int[] bestMove = {-1, -1};
         int[] tempMove;
 
-        if (currentBoard.gameEnded() && isMaxPlayer) {
-            addText("hey");
+        if (isMaxPlayer) {
             bestMove[0] = Integer.MIN_VALUE;
-            return bestMove;
         }
-        else if (currentBoard.gameEnded() && !isMaxPlayer) {
+        else {
             bestMove[0] = Integer.MAX_VALUE;
+        }
+
+        if (newBoard.gameEnded()) {
+            if (newBoard.getWinner() == 1 || newBoard.getWinner() == 2) {
+                bestMove[0] = newBoard.getScore(newBoard.getWinner());
+            }
             return bestMove;
         }
 
+        /* If the leaf node has been reached, return heuristic */
         if (depth == 0) {
             bestMove[0] = heuristicCalc(newBoard);
             return bestMove;
         }
 
+        /* Recursively traverse each respective node (game move) tree */
         for (int i = 1; i <= 6; i++) {
+            /* Check if move is possible, and if so...*/
             if (newBoard.makeMove(i)) {
+                /* Continue traversing the tree */
                 tempMove = findBestMoveHelper(newBoard, depth - 1, !isMaxPlayer);
 
-                if (isMaxPlayer && tempMove[0] > Integer.MIN_VALUE) {
+                /* If it is the maximizing player's turn, and the score is higher than -INF */
+                if (isMaxPlayer && (tempMove[0] > bestMove[0])) {
+                    /* Update the best move parameter */
                     tempMove[1] = i;
                     bestMove = tempMove;
-                    //addText("Maxplayer score:" + Integer.toString(bestMove[0]) + ", move: " + Integer.toString(bestMove[1]));
                 }
-                else if (!isMaxPlayer && tempMove[0] < Integer.MAX_VALUE) {
+                else if (!isMaxPlayer && (tempMove[0] < bestMove[0])) { /* If it is the minimizing player's turn, and the score is less than +INF */
+                    /* Update the best move parameter */
                     tempMove[1] = i;
                     bestMove = tempMove;
-                    //addText("Minplayer score:" + Integer.toString(bestMove[0]) + ", move: " + Integer.toString(bestMove[1]));
                 }
             }
         }
