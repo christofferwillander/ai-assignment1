@@ -212,8 +212,111 @@ public class AIClient implements Runnable
      */
     public int getMove(GameState currentBoard)
     {
-        int myMove = getRandom();
-        return myMove;
+        boolean isMaxPlayer = false;
+        int depth = 6;
+
+        /* Player 1 is always maximizing player */
+        if (player == 1) {
+            isMaxPlayer = true;
+        }
+
+        return findBestMove(currentBoard, depth, isMaxPlayer);
+    }
+
+    /**
+     *
+     * This method implements the MiniMaxi algorithm for finding the best move.
+     *
+     * @param currentBoard The current board state.
+     * @param depth Max depth of MiniMaxi search.
+     * @param isMaxPlayer Boolean stating whether or not current player is the maximizing player.
+     * @return Returns the best move determined by the MiniMaxi search.
+     */
+
+    public int findBestMove(GameState currentBoard, int depth, boolean isMaxPlayer) {
+        int[] bestMove;
+        bestMove = findBestMoveHelper(currentBoard, depth, isMaxPlayer);
+        return bestMove[1];
+    }
+
+    /**
+     *
+     * This function is a helper function for performing the recursive DFS used in the MiniMaxi algorithm.
+     *
+     * @param currentBoard The current board state.
+     * @param depth Current depth of DFS.
+     * @param isMaxPlayer Boolean stating whether or not current player is the maximizing player.
+     * @return Returns an int array with the best score and move for the player
+     * Index 0 corresponds to score, index 1 corresponds to move.
+     */
+    public int[] findBestMoveHelper(GameState currentBoard, int depth, boolean isMaxPlayer) {
+        GameState newBoard = currentBoard.clone();
+        int[] bestMove = {-1, -1};
+        int[] tempMove;
+
+        if (currentBoard.gameEnded() && isMaxPlayer) {
+            addText("hey");
+            bestMove[0] = Integer.MIN_VALUE;
+            return bestMove;
+        }
+        else if (currentBoard.gameEnded() && !isMaxPlayer) {
+            bestMove[0] = Integer.MAX_VALUE;
+            return bestMove;
+        }
+
+        if (depth == 0) {
+            bestMove[0] = heuristicCalc(newBoard);
+            return bestMove;
+        }
+
+        for (int i = 1; i <= 6; i++) {
+            if (newBoard.makeMove(i)) {
+                tempMove = findBestMoveHelper(newBoard, depth - 1, !isMaxPlayer);
+
+                if (isMaxPlayer && tempMove[0] > Integer.MIN_VALUE) {
+                    tempMove[1] = i;
+                    bestMove = tempMove;
+                    //addText("Maxplayer score:" + Integer.toString(bestMove[0]) + ", move: " + Integer.toString(bestMove[1]));
+                }
+                else if (!isMaxPlayer && tempMove[0] < Integer.MAX_VALUE) {
+                    tempMove[1] = i;
+                    bestMove = tempMove;
+                    //addText("Minplayer score:" + Integer.toString(bestMove[0]) + ", move: " + Integer.toString(bestMove[1]));
+                }
+            }
+        }
+
+        return bestMove;
+    }
+
+    /**
+     *
+     * This function calculates the heuristic value for each respective node.
+     *
+     * @param currentBoard The current board state.
+     * @return Heuristic value based on current scores and number of seeds in the ambos.
+     * High values for player 1 (maximizing player), low values for player 2 (minimizing player).
+     */
+
+    public int heuristicCalc(GameState currentBoard) {
+        int player1Seeds = 0;
+        int player2Seeds = 0;
+
+        /* Summing up the number of seeds in each player's ambos */
+        for (int i = 1; i <= 6; i++) {
+            player1Seeds += currentBoard.getSeeds(i, 1);
+        }
+
+        for (int i = 1; i <= 6; i++) {
+            player2Seeds += currentBoard.getSeeds(i, 2);
+        }
+
+        /* Adding the number of seeds in each player's house (these seeds are worth twice as much) */
+        player1Seeds += (currentBoard.getScore(1) * 2);
+        player2Seeds += (currentBoard.getScore(2) * 2);
+
+        /* Returning the difference in seed values between player 1 and player 2 */
+        return player1Seeds - player2Seeds;
     }
     
     /**
