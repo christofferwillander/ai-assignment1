@@ -218,8 +218,11 @@ public class AIClient implements Runnable
         int bestScore;
         int bestMove = -1;
 
+        long startTime = System.currentTimeMillis();
+        long maxSearchTime = 5000; /* N.B. this is time in ms */
+
         boolean isMaxPlayer = false;
-        int depth = 6;
+        int curDepth = 0;
 
         GameState newBoard;
 
@@ -236,47 +239,53 @@ public class AIClient implements Runnable
             bestScore = Integer.MAX_VALUE;
         }
 
-        /* Spawning 6 nodes to find the best move in each respective subtree */
-        for (int ambo = 1; ambo <= 6; ambo++) {
-            newBoard = currentBoard.clone();
+        /* While the search has not been carried out for more than maximum search time */
+        while ((System.currentTimeMillis() - startTime) < maxSearchTime) {
+            /* Increase depth by 1 (initialized to 0) */
+            curDepth++;
 
-            if (isMaxPlayer) {
-                score = Integer.MIN_VALUE;
-            }
-            else {
-                score = Integer.MAX_VALUE;
-            }
-            /* Check if move is possible, and if so...*/
+            /* Spawning 6 nodes to find the best move in each respective subtree */
+            for (int ambo = 1; ambo <= 6; ambo++) {
+                newBoard = currentBoard.clone();
 
-            if (newBoard.makeMove(ambo)) {
-                /* This check is implemented to account for when any player gets multiple turns */
-                if (newBoard.getNextPlayer() == 1) {
-                    score = miniMaxi(newBoard, depth - 1, isMaxPlayer, alpha, beta);
+                if (isMaxPlayer) {
+                    score = Integer.MIN_VALUE;
+                } else {
+                    score = Integer.MAX_VALUE;
                 }
-                if (newBoard.getNextPlayer() == 2) {
-                    score = miniMaxi(newBoard, depth - 1, !isMaxPlayer, alpha, beta);
-                }
-            }
+                /* Check if move is possible, and if so...*/
 
-            /* If it's the maximizing player's turn and the current score is better than the previous - we have found a better branch (ambo) */
-            if (isMaxPlayer && score > bestScore) {
-                bestScore = score;
-                bestMove = ambo;
-            } /* If it's the minimizing player's turn and the current score is better than the previous - we have found a better branch (ambo) */
-            else if (!isMaxPlayer && score < bestScore) {
-                bestScore = score;
-                bestMove = ambo;
+                if (newBoard.makeMove(ambo)) {
+                    /* This check is implemented to account for when any player gets multiple turns */
+                    if (newBoard.getNextPlayer() == 1) {
+                        score = miniMaxi(newBoard, curDepth - 1, isMaxPlayer, alpha, beta, startTime, maxSearchTime);
+                    }
+                    if (newBoard.getNextPlayer() == 2) {
+                        score = miniMaxi(newBoard, curDepth - 1, !isMaxPlayer, alpha, beta, startTime, maxSearchTime);
+                    }
+                }
+
+                /* If it's the maximizing player's turn and the current score is better than the previous - we have found a better branch (ambo) */
+                if (isMaxPlayer && score > bestScore) {
+                    bestScore = score;
+                    bestMove = ambo;
+                } /* If it's the minimizing player's turn and the current score is better than the previous - we have found a better branch (ambo) */ else if (!isMaxPlayer && score < bestScore) {
+                    bestScore = score;
+                    bestMove = ambo;
+                }
             }
         }
 
-        /* addText("Best score:" + Integer.toString(bestScore)); */
-        /* addText("Best move:" + Integer.toString(bestMove)); */
+        /* addText("Best score: " + Integer.toString(bestScore)); */
+        /* addText("Best move: " + Integer.toString(bestMove)); */
+        /* addText("Reached depth of: " + Integer.toString(curDepth)); */
         return bestMove;
     }
 
     /**
      *
-     * This function implements the means for performing the recursive DFS used in the MiniMaxi algorithm.
+     * This function implements the means for performing the recursive DFS with alfa-beta pruning used in the MiniMaxi algorithm.
+     * The DFS search is carried out in an iterative deepening fashion.
      *
      * @param currentBoard The current board state.
      * @param depth Current depth of DFS.
@@ -284,7 +293,7 @@ public class AIClient implements Runnable
      * @return Returns the best score of the node sub-tree.
      *
      */
-    public int miniMaxi(GameState currentBoard, int depth, boolean isMaxPlayer, int alpha, int beta) {
+    public int miniMaxi(GameState currentBoard, int depth, boolean isMaxPlayer, int alpha, int beta, long startTime, long maxSearchTime) {
         int bestScore;
         int score;
 
@@ -300,8 +309,7 @@ public class AIClient implements Runnable
         }
 
         /* If the leaf node has been reached, return heuristic score */
-        if (depth == 0 || newBoard.gameEnded()) {
-            /* addText("Score:" + Integer.toString(heuristicCalc(newBoard))); */
+        if (depth == 0 || newBoard.gameEnded() || (System.currentTimeMillis() - startTime) >= maxSearchTime) {
             bestScore = heuristicCalc(newBoard);
             return bestScore;
         }
@@ -319,10 +327,10 @@ public class AIClient implements Runnable
             if (newBoard.makeMove(ambo)) {
                 /* This check is implemented to account for when any player gets multiple turns */
                 if (newBoard.getNextPlayer() == 1) {
-                    score = miniMaxi(newBoard, depth - 1, isMaxPlayer, alpha, beta);
+                    score = miniMaxi(newBoard, depth - 1, isMaxPlayer, alpha, beta, startTime, maxSearchTime);
                 }
                 if (newBoard.getNextPlayer() == 2) {
-                    score = miniMaxi(newBoard, depth - 1, !isMaxPlayer, alpha, beta);
+                    score = miniMaxi(newBoard, depth - 1, !isMaxPlayer, alpha, beta, startTime, maxSearchTime);
                 }
             }
 
