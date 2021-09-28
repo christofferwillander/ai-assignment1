@@ -213,6 +213,8 @@ public class AIClient implements Runnable
     public int getMove(GameState currentBoard)
     {
         int score;
+        int alpha = Integer.MIN_VALUE;
+        int beta = Integer.MAX_VALUE;
         int bestScore;
         int bestMove = -1;
 
@@ -249,10 +251,10 @@ public class AIClient implements Runnable
             if (newBoard.makeMove(ambo)) {
                 /* This check is implemented to account for when any player gets multiple turns */
                 if (newBoard.getNextPlayer() == 1) {
-                    score = miniMaxi(newBoard, depth - 1, isMaxPlayer);
+                    score = miniMaxi(newBoard, depth - 1, isMaxPlayer, alpha, beta);
                 }
                 if (newBoard.getNextPlayer() == 2) {
-                    score = miniMaxi(newBoard, depth - 1, !isMaxPlayer);
+                    score = miniMaxi(newBoard, depth - 1, !isMaxPlayer, alpha, beta);
                 }
             }
 
@@ -282,7 +284,7 @@ public class AIClient implements Runnable
      * @return Returns the best score of the node sub-tree.
      *
      */
-    public int miniMaxi(GameState currentBoard, int depth, boolean isMaxPlayer) {
+    public int miniMaxi(GameState currentBoard, int depth, boolean isMaxPlayer, int alpha, int beta) {
         int bestScore;
         int score;
 
@@ -317,19 +319,26 @@ public class AIClient implements Runnable
             if (newBoard.makeMove(ambo)) {
                 /* This check is implemented to account for when any player gets multiple turns */
                 if (newBoard.getNextPlayer() == 1) {
-                    score = miniMaxi(newBoard, depth - 1, isMaxPlayer);
+                    score = miniMaxi(newBoard, depth - 1, isMaxPlayer, alpha, beta);
                 }
                 if (newBoard.getNextPlayer() == 2) {
-                    score = miniMaxi(newBoard, depth - 1, !isMaxPlayer);
+                    score = miniMaxi(newBoard, depth - 1, !isMaxPlayer, alpha, beta);
                 }
             }
 
             /* Calculate best score for the current  player */
             if (isMaxPlayer) {
                 bestScore = Integer.max(score, bestScore);
+                alpha = Integer.max(score, alpha);
             }
             else {
                 bestScore = Integer.min(score, bestScore);
+                beta = Integer.min(score, beta);
+            }
+            
+            /* Prune away the unnecessary branch */
+            if (beta <= alpha) {
+            	break;
             }
         }
 
