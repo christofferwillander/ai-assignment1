@@ -212,92 +212,128 @@ public class AIClient implements Runnable
      */
     public int getMove(GameState currentBoard)
     {
-        int bestMove;
+        int score;
+        int bestScore;
+        int bestMove = -1;
+
         boolean isMaxPlayer = false;
         int depth = 6;
+
+        GameState newBoard;
 
         /* Player 1 is always maximizing player */
         if (player == 1) {
             isMaxPlayer = true;
         }
 
-        bestMove = findBestMove(currentBoard, depth, isMaxPlayer);
+        /* Initialization of best score for minimizing/maximizing player */
+        if (isMaxPlayer) {
+            bestScore = Integer.MIN_VALUE;
+        }
+        else {
+            bestScore = Integer.MAX_VALUE;
+        }
+
+        /* Spawning 6 nodes to find the best move in each respective subtree */
+        for (int ambo = 1; ambo <= 6; ambo++) {
+            newBoard = currentBoard.clone();
+
+            if (isMaxPlayer) {
+                score = Integer.MIN_VALUE;
+            }
+            else {
+                score = Integer.MAX_VALUE;
+            }
+            /* Check if move is possible, and if so...*/
+
+            if (newBoard.makeMove(ambo)) {
+                /* This check is implemented to account for when any player gets multiple turns */
+                if (newBoard.getNextPlayer() == 1) {
+                    score = miniMaxi(newBoard, depth - 1, isMaxPlayer);
+                }
+                if (newBoard.getNextPlayer() == 2) {
+                    score = miniMaxi(newBoard, depth - 1, !isMaxPlayer);
+                }
+            }
+
+            /* If it's the maximizing player's turn and the current score is better than the previous - we have found a better branch (ambo) */
+            if (isMaxPlayer && score > bestScore) {
+                bestScore = score;
+                bestMove = ambo;
+            } /* If it's the minimizing player's turn and the current score is better than the previous - we have found a better branch (ambo) */
+            else if (!isMaxPlayer && score < bestScore) {
+                bestScore = score;
+                bestMove = ambo;
+            }
+        }
+
+        /* addText("Best score:" + Integer.toString(bestScore)); */
+        /* addText("Best move:" + Integer.toString(bestMove)); */
         return bestMove;
     }
 
     /**
      *
-     * This method implements the MiniMaxi algorithm for finding the best move.
-     *
-     * @param currentBoard The current board state.
-     * @param depth Max depth of MiniMaxi search.
-     * @param isMaxPlayer Boolean stating whether or not current player is the maximizing player.
-     * @return Returns the best move determined by the MiniMaxi search.
-     */
-
-    public int findBestMove(GameState currentBoard, int depth, boolean isMaxPlayer) {
-        int[] bestMove;
-        bestMove = findBestMoveHelper(currentBoard, depth, isMaxPlayer);
-        return bestMove[1];
-    }
-
-    /**
-     *
-     * This function is a helper function for performing the recursive DFS used in the MiniMaxi algorithm.
+     * This function implements the means for performing the recursive DFS used in the MiniMaxi algorithm.
      *
      * @param currentBoard The current board state.
      * @param depth Current depth of DFS.
      * @param isMaxPlayer Boolean stating whether or not current player is the maximizing player.
-     * @return Returns an int array with the best score and move for the player
-     * Index 0 corresponds to score, index 1 corresponds to move.
+     * @return Returns the best score of the node sub-tree.
+     *
      */
-    public int[] findBestMoveHelper(GameState currentBoard, int depth, boolean isMaxPlayer) {
-        GameState newBoard = currentBoard.clone();
-        int[] bestMove = {-1, -1};
-        int[] tempMove;
+    public int miniMaxi(GameState currentBoard, int depth, boolean isMaxPlayer) {
+        int bestScore;
+        int score;
 
+        /* Cloning the current game board */
+        GameState newBoard = currentBoard.clone();
+
+        /* Initialization of best score for minimizing/maximizing player */
         if (isMaxPlayer) {
-            bestMove[0] = Integer.MIN_VALUE;
+            bestScore = Integer.MIN_VALUE;
         }
         else {
-            bestMove[0] = Integer.MAX_VALUE;
+            bestScore = Integer.MAX_VALUE;
         }
 
-        if (newBoard.gameEnded()) {
-            if (newBoard.getWinner() == 1 || newBoard.getWinner() == 2) {
-                bestMove[0] = newBoard.getScore(newBoard.getWinner());
-            }
-            return bestMove;
-        }
-
-        /* If the leaf node has been reached, return heuristic */
-        if (depth == 0) {
-            bestMove[0] = heuristicCalc(newBoard);
-            return bestMove;
+        /* If the leaf node has been reached, return heuristic score */
+        if (depth == 0 || newBoard.gameEnded()) {
+            /* addText("Score:" + Integer.toString(heuristicCalc(newBoard))); */
+            bestScore = heuristicCalc(newBoard);
+            return bestScore;
         }
 
         /* Recursively traverse each respective node (game move) tree */
-        for (int i = 1; i <= 6; i++) {
-            /* Check if move is possible, and if so...*/
-            if (newBoard.makeMove(i)) {
-                /* Continue traversing the tree */
-                tempMove = findBestMoveHelper(newBoard, depth - 1, !isMaxPlayer);
+        for (int ambo = 1; ambo <= 6; ambo++) {
+            if (isMaxPlayer) {
+                score = Integer.MIN_VALUE;
+            }
+            else {
+                score = Integer.MAX_VALUE;
+            }
 
-                /* If it is the maximizing player's turn, and the score is higher than -INF */
-                if (isMaxPlayer && (tempMove[0] > bestMove[0])) {
-                    /* Update the best move parameter */
-                    tempMove[1] = i;
-                    bestMove = tempMove;
+            /* Check if move is possible, and if so...*/
+            if (newBoard.makeMove(ambo)) {
+                /* This check is implemented to account for when any player gets multiple turns */
+                if (newBoard.getNextPlayer() == 1) {
+                    score = miniMaxi(newBoard, depth - 1, isMaxPlayer);
                 }
-                else if (!isMaxPlayer && (tempMove[0] < bestMove[0])) { /* If it is the minimizing player's turn, and the score is less than +INF */
-                    /* Update the best move parameter */
-                    tempMove[1] = i;
-                    bestMove = tempMove;
+                if (newBoard.getNextPlayer() == 2) {
+                    score = miniMaxi(newBoard, depth - 1, !isMaxPlayer);
                 }
+            }
+
+            /* Calculate best score for the current  player */
+            if (isMaxPlayer) {
+                bestScore = Integer.max(score, bestScore);
+            }
+            else {
+                bestScore = Integer.min(score, bestScore);
             }
         }
 
-        return bestMove;
+        return bestScore;
     }
 
     /**
@@ -314,12 +350,12 @@ public class AIClient implements Runnable
         int player2Seeds = 0;
 
         /* Summing up the number of seeds in each player's ambos */
-        for (int i = 1; i <= 6; i++) {
-            player1Seeds += currentBoard.getSeeds(i, 1);
+        for (int ambo = 1; ambo <= 6; ambo++) {
+            player1Seeds += currentBoard.getSeeds(ambo, 1);
         }
 
-        for (int i = 1; i <= 6; i++) {
-            player2Seeds += currentBoard.getSeeds(i, 2);
+        for (int ambo = 1; ambo <= 6; ambo++) {
+            player2Seeds += currentBoard.getSeeds(ambo, 2);
         }
 
         /* Adding the number of seeds in each player's house (these seeds are worth twice as much) */
