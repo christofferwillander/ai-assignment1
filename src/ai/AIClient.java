@@ -208,12 +208,183 @@ public class AIClient implements Runnable
      * Minimax search.
      * 
      * @param currentBoard The current board state
-     * @return Move to make (1-6)
+     * @return The best move to make (1-6) based on the minimax algorithm
      */
     public int getMove(GameState currentBoard)
     {
-        int myMove = getRandom();
-        return myMove;
+        int score;
+        int alpha = Integer.MIN_VALUE;
+        int beta = Integer.MAX_VALUE;
+        int bestScore;
+        int bestMove = -1;
+
+        long startTime = System.currentTimeMillis();
+        long maxSearchTime = 5000; /* N.B. this is time in ms */
+
+        boolean isMaxPlayer = false;
+        int curDepth = 0;
+
+        GameState newBoard;
+
+        /* Player 1 is always maximizing player */
+        if (player == 1) {
+            isMaxPlayer = true;
+        }
+
+        /* Initialization of best score for minimizing/maximizing player */
+        if (isMaxPlayer) {
+            bestScore = Integer.MIN_VALUE;
+        }
+        else {
+            bestScore = Integer.MAX_VALUE;
+        }
+
+        /* While the search has not been carried out for more than maximum search time */
+        while ((System.currentTimeMillis() - startTime) < maxSearchTime) {
+            /* Increase depth by 1 (initialized to 0) */
+            curDepth++;
+
+            /* Spawning 6 nodes to find the best move in each respective subtree */
+            for (int ambo = 1; ambo <= 6; ambo++) {
+                newBoard = currentBoard.clone();
+
+                if (isMaxPlayer) {
+                    score = Integer.MIN_VALUE;
+                } else {
+                    score = Integer.MAX_VALUE;
+                }
+                /* Check if move is possible, and if so...*/
+
+                if (newBoard.makeMove(ambo)) {
+                    /* This check is implemented to account for when any player gets multiple turns */
+                    if (newBoard.getNextPlayer() == 1) {
+                        score = miniMaxi(newBoard, curDepth - 1, isMaxPlayer, alpha, beta, startTime, maxSearchTime);
+                    }
+                    if (newBoard.getNextPlayer() == 2) {
+                        score = miniMaxi(newBoard, curDepth - 1, !isMaxPlayer, alpha, beta, startTime, maxSearchTime);
+                    }
+                }
+
+                /* If it's the maximizing player's turn and the current score is better than the previous - we have found a better branch (ambo) */
+                if (isMaxPlayer && score > bestScore) {
+                    bestScore = score;
+                    bestMove = ambo;
+                } /* If it's the minimizing player's turn and the current score is better than the previous - we have found a better branch (ambo) */ else if (!isMaxPlayer && score < bestScore) {
+                    bestScore = score;
+                    bestMove = ambo;
+                }
+            }
+        }
+
+        /* addText("Best score: " + Integer.toString(bestScore)); */
+        /* addText("Best move: " + Integer.toString(bestMove)); */
+        /* addText("Reached depth of: " + Integer.toString(curDepth)); */
+        return bestMove;
+    }
+
+    /**
+     *
+     * This function implements the means for performing the recursive DFS with alfa-beta pruning used in the MiniMaxi algorithm.
+     * The DFS search is carried out in an iterative deepening fashion.
+     *
+     * @param currentBoard The current board state.
+     * @param depth Current depth of DFS.
+     * @param isMaxPlayer Boolean stating whether or not current player is the maximizing player.
+     * @param alpha The current highest score. Used for pruning when compared to beta.
+     * @param beta The current lowest score. Used for pruning when compared to alpha.
+     * @param startTime The time when the player initiated their move. Used to know how much time has elapsed.
+     * @param maxSearchTime The maximum time the algorithm can search for a solution. The best solution that was found during this time will be picked as the optimal solution.
+     * @return Returns the best score of the node sub-tree.
+     *
+     */
+    public int miniMaxi(GameState currentBoard, int depth, boolean isMaxPlayer, int alpha, int beta, long startTime, long maxSearchTime) {
+        int bestScore;
+        int score;
+
+        /* Cloning the current game board */
+        GameState newBoard = currentBoard.clone();
+
+        /* Initialization of best score for minimizing/maximizing player */
+        if (isMaxPlayer) {
+            bestScore = Integer.MIN_VALUE;
+        }
+        else {
+            bestScore = Integer.MAX_VALUE;
+        }
+
+        /* If the leaf node has been reached, return heuristic score */
+        if (depth == 0 || newBoard.gameEnded() || (System.currentTimeMillis() - startTime) >= maxSearchTime) {
+            bestScore = heuristicCalc(newBoard);
+            return bestScore;
+        }
+
+        /* Recursively traverse each respective node (game move) tree */
+        for (int ambo = 1; ambo <= 6; ambo++) {
+            if (isMaxPlayer) {
+                score = Integer.MIN_VALUE;
+            }
+            else {
+                score = Integer.MAX_VALUE;
+            }
+
+            /* Check if move is possible, and if so...*/
+            if (newBoard.makeMove(ambo)) {
+                /* This check is implemented to account for when any player gets multiple turns */
+                if (newBoard.getNextPlayer() == 1) {
+                    score = miniMaxi(newBoard, depth - 1, isMaxPlayer, alpha, beta, startTime, maxSearchTime);
+                }
+                if (newBoard.getNextPlayer() == 2) {
+                    score = miniMaxi(newBoard, depth - 1, !isMaxPlayer, alpha, beta, startTime, maxSearchTime);
+                }
+            }
+
+            /* Calculate best score for the current player */
+            if (isMaxPlayer) {
+                bestScore = Integer.max(score, bestScore);
+                alpha = Integer.max(score, alpha);
+            }
+            else {
+                bestScore = Integer.min(score, bestScore);
+                beta = Integer.min(score, beta);
+            }
+            
+            /* Prune away the unnecessary branch */
+            if (beta <= alpha) {
+            	break;
+            }
+        }
+
+        return bestScore;
+    }
+
+    /**
+     *
+     * This function calculates the heuristic value for each respective node.
+     *
+     * @param currentBoard The current board state.
+     * @return Heuristic value based on current scores and number of seeds in the ambos.
+     * High values for player 1 (maximizing player), low values for player 2 (minimizing player).
+     */
+
+    public int heuristicCalc(GameState currentBoard) {
+        int player1Seeds = 0;
+        int player2Seeds = 0;
+
+        /* Summing up the number of seeds in each player's ambos */
+        for (int ambo = 1; ambo <= 6; ambo++) {
+            player1Seeds += currentBoard.getSeeds(ambo, 1);
+        }
+
+        for (int ambo = 1; ambo <= 6; ambo++) {
+            player2Seeds += currentBoard.getSeeds(ambo, 2);
+        }
+
+        /* Adding the number of seeds in each player's house (these seeds are worth twice as much) */
+        player1Seeds += (currentBoard.getScore(1) * 2);
+        player2Seeds += (currentBoard.getScore(2) * 2);
+
+        /* Returning the difference in seed values between player 1 and player 2 */
+        return player1Seeds - player2Seeds;
     }
     
     /**
