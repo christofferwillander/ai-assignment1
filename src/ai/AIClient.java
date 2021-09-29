@@ -208,7 +208,7 @@ public class AIClient implements Runnable
      * Minimax search.
      * 
      * @param currentBoard The current board state
-     * @return Move to make (1-6)
+     * @return The best move to make (1-6) based on the minimax algorithm
      */
     public int getMove(GameState currentBoard)
     {
@@ -290,6 +290,10 @@ public class AIClient implements Runnable
      * @param currentBoard The current board state.
      * @param depth Current depth of DFS.
      * @param isMaxPlayer Boolean stating whether or not current player is the maximizing player.
+     * @param alpha The current highest score. Used for pruning when compared to beta.
+     * @param beta The current lowest score. Used for pruning when compared to alpha.
+     * @param startTime The time when the player initiated their move. Used to know how much time has elapsed.
+     * @param maxSearchTime The maximum time the algorithm can search for a solution. The best solution that was found during this time will be picked as the optimal solution.
      * @return Returns the best score of the node sub-tree.
      *
      */
@@ -334,7 +338,7 @@ public class AIClient implements Runnable
                 }
             }
 
-            /* Calculate best score for the current  player */
+            /* Calculate best score for the current player */
             if (isMaxPlayer) {
                 bestScore = Integer.max(score, bestScore);
                 alpha = Integer.max(score, alpha);
