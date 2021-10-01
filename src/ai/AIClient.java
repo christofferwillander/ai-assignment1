@@ -372,10 +372,40 @@ public class AIClient implements Runnable
 
         /* Summing up the number of seeds in each player's ambos */
         for (int ambo = 1; ambo <= 6; ambo++) {
-            player1Seeds += currentBoard.getSeeds(ambo, 1);
+        	/* 
+        	 * If the player owns an ambo that has 0 pebbles in it
+        	 * And the ambo on the opposite side has more than 0 pebbles
+        	 */
+	       	if ((currentBoard.getSeeds(ambo, 1) == 0) && (currentBoard.getSeeds(7 - ambo, 2) > 0)) {
+	       		/* For each ambo up until the current ambo, search for if there are any ambos
+	       		 * with enough pebbles to reach this current empty ambo
+	       		 * */
+	       		for (int prevAmbo = 1; prevAmbo < ambo; prevAmbo++) {
+	       			// If so, add the opponents pebbles to your own and decrease the number of pebbles owned by the opponent.
+	       			if (prevAmbo + currentBoard.getSeeds(prevAmbo, 1) == ambo) {
+	       				player1Seeds += currentBoard.getSeeds(7 - ambo, 2);
+	       				player2Seeds -= currentBoard.getSeeds(7 - ambo, 2);
+	       				/* As the pebbles are only possible to be captured once,
+	       				 * we break the for-loop as we don't need to check the other previous ambos.
+	       				 */
+	       				break;
+	       			}
+	       		}
+	       	}
+        	player1Seeds += currentBoard.getSeeds(ambo, 1);
         }
 
         for (int ambo = 1; ambo <= 6; ambo++) {
+        	// Same as with the previous player but the other way around --^
+        	if ((currentBoard.getSeeds(ambo, 2) == 0) && (currentBoard.getSeeds(7 - ambo, 1) > 0)) {
+        		for (int prevAmbo = 1; prevAmbo < ambo; prevAmbo++) {
+        			if (prevAmbo + currentBoard.getSeeds(prevAmbo, 2) == ambo) {
+        				player1Seeds += currentBoard.getSeeds(7 - ambo, 1);
+        				player2Seeds -= currentBoard.getSeeds(7 - ambo, 1);
+        				break;
+        			}
+        		}
+        	}
             player2Seeds += currentBoard.getSeeds(ambo, 2);
         }
 
