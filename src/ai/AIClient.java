@@ -97,11 +97,42 @@ public class AIClient implements Runnable
         text.setCaretPosition(text.getDocument().getLength());
     }
 
+    /**
+     * Function for creating the initial opening handbook file, if it does not exist.
+     * @return True or false depending on whether or not the file could be created.
+     */
+
+    public boolean createCSVFile() {
+        FileWriter CSVFile;
+
+        try {
+            /* CSV structure as follows; Ambo, Wins, Losses */
+            CSVFile = new FileWriter("./openingbook.csv");
+            for (int ambo = 1; ambo <= 6; ambo++) {
+                CSVFile.append(Integer.toString(ambo));
+                CSVFile.append(",0,0\n");
+            }
+
+            CSVFile.flush();
+            CSVFile.close();
+            return true;
+        } catch (Exception e) {
+            addText("Could not create file for opening handbook.");
+            return false;
+        }
+    }
+
+    /**
+     * Function for finding the best move according to the opening handbook.
+     * @return Returns the best ambo (if the entries are more than 100 in the book). Otherwise -1.
+     * Returns -1 if an error occurs, using MiniMax instead.
+     */
     public int findBestAmbo() {
         int bestAmbo = -1;
         long bestScore = 0;
         int totalWins;
         int totalLosses;
+        int totalGames = 0;
 
         BufferedReader CSVReader;
         File openingBook = new File("./openingbook.csv");
@@ -123,6 +154,8 @@ public class AIClient implements Runnable
                 for (int ambo = 0; ambo < 6; ambo++) {
                     totalWins = Integer.parseInt(dataValues.get(((ambo + 1) * 3) - 2));
                     totalLosses = Integer.parseInt(dataValues.get(((ambo + 1) * 3) - 1));
+                    totalGames += totalWins;
+                    totalGames += totalLosses;
 
                     if (totalWins > 0 || totalLosses > 0) {
                         if (totalWins / (totalWins + totalLosses) > bestScore) {
@@ -131,12 +164,27 @@ public class AIClient implements Runnable
                         }
                     }
                 }
+
+                /* If there is not enough moves in the opening handbook, resort to MiniMax for further training */
+                if (totalGames <= 100) {
+                    bestAmbo = -1;
+                    addText("Not enough data present for opening handbook. Switching to MiniMax.");
+                }
+                else if (totalGames > 100 && (bestAmbo >=1 && bestAmbo <= 6))  {
+                    addText("Choosing first move according to opening handbook: ambo number " + Integer.toString(bestAmbo));
+                }
+
                 return bestAmbo;
             }
             catch (Exception e) {
                 addText("Failed to process opening handbook.");
             }
 
+        }
+        else { /* If opening handbook file was not yet created */
+            if (createCSVFile()) {
+                addText("Not enough data present for opening handbook. Switching to MiniMax.");
+            }
         }
         return bestAmbo;
     }
@@ -147,78 +195,71 @@ public class AIClient implements Runnable
      * @param Parameter stating whether or not the AI won using the opening move in question.
      */
 
-    public void writeCSVFile(int initialMove, boolean didWin) {
+    public void writeCSVFile(int initialMove, boolean playerWon) {
+        boolean fileCreated = false;
         FileWriter CSVFile;
         BufferedReader CSVReader;
         File openingBook = new File("./openingbook.csv");
 
         /* If opening book does not exist, create its initial structure */
         if (!openingBook.exists()){
-            try {
-                /* CSV structure as follows; Ambo, Wins, Losses */
-                CSVFile = new FileWriter("./openingbook.csv");
-                for (int ambo = 1; ambo <= 6; ambo++) {
-                    CSVFile.append(Integer.toString(ambo));
-                    CSVFile.append(",0,0\n");
-                }
-
-                CSVFile.flush();
-                CSVFile.close();
-            } catch (Exception e) {
-                addText("Could not create file for opening handbook.");
+            if (createCSVFile()) {
+                fileCreated = true;
             }
         }
-
-        /* Attempt to read all lines from the file into an ArrayList */
-        try {
-            CSVReader = new BufferedReader(new FileReader("openingbook.csv"));
-            String row;
-            ArrayList<String> dataValues = new ArrayList();
-            while ((row = CSVReader.readLine()) != null) {
-                String[] data = row.split(",");
-
-                for (int i = 0; i < data.length; i++) {
-                    dataValues.add(data[i]);
-                }
-            }
-            CSVReader.close();
-
-            /* If user won, update the number of wins for the current ambo */
-            if(didWin) {
-                int arrayIndex = initialMove * 3 - 2;
-                int currentScore = Integer.parseInt(dataValues.get(arrayIndex));
-                currentScore++;
-                dataValues.set(arrayIndex, Integer.toString(currentScore));
-            }
-            else { /* If user lost, update the number of losses for the current ambo */
-                int arrayIndex = initialMove * 3 - 1;
-                int currentScore = Integer.parseInt(dataValues.get(arrayIndex));
-                currentScore++;
-                dataValues.set(arrayIndex, Integer.toString(currentScore));
-            }
-
-            /* Write all changes to file */
-            try {
-                CSVFile = new FileWriter("./openingbook.csv");
-                for (int i = 0; i < dataValues.size(); i++) {
-                    CSVFile.append(dataValues.get(i));
-
-                    if (i % 3 == 2) {
-                        CSVFile.append("\n");
-                    }
-                    else {
-                        CSVFile.append(",");
-                    }
-                }
-
-                CSVFile.flush();
-                CSVFile.close();
-            } catch (Exception e) {
-                addText("Could not update file for opening handbook.");
-            }
+        else {
+            fileCreated = true;
         }
-        catch(Exception e) {
-            addText("An error occurred when processing the opening handbook.");
+
+        if (fileCreated) {
+            /* Attempt to read all lines from the file into an ArrayList */
+            try {
+                CSVReader = new BufferedReader(new FileReader("openingbook.csv"));
+                String row;
+                ArrayList<String> dataValues = new ArrayList();
+                while ((row = CSVReader.readLine()) != null) {
+                    String[] data = row.split(",");
+
+                    for (int i = 0; i < data.length; i++) {
+                        dataValues.add(data[i]);
+                    }
+                }
+                CSVReader.close();
+
+                /* If player won, update the number of wins for the current ambo */
+                if (playerWon) {
+                    int arrayIndex = initialMove * 3 - 2;
+                    int currentScore = Integer.parseInt(dataValues.get(arrayIndex));
+                    currentScore++;
+                    dataValues.set(arrayIndex, Integer.toString(currentScore));
+                } else { /* If player lost, update the number of losses for the current ambo */
+                    int arrayIndex = initialMove * 3 - 1;
+                    int currentScore = Integer.parseInt(dataValues.get(arrayIndex));
+                    currentScore++;
+                    dataValues.set(arrayIndex, Integer.toString(currentScore));
+                }
+
+                /* Write all changes to file */
+                try {
+                    CSVFile = new FileWriter("./openingbook.csv");
+                    for (int i = 0; i < dataValues.size(); i++) {
+                        CSVFile.append(dataValues.get(i));
+
+                        if (i % 3 == 2) {
+                            CSVFile.append("\n");
+                        } else {
+                            CSVFile.append(",");
+                        }
+                    }
+
+                    CSVFile.flush();
+                    CSVFile.close();
+                } catch (Exception e) {
+                    addText("Could not update file for opening handbook.");
+                }
+            } catch (Exception e) {
+                addText("An error occurred when processing the opening handbook.");
+            }
         }
     }
     
@@ -280,13 +321,11 @@ public class AIClient implements Runnable
                 {
                     int nextPlayer = Integer.parseInt(reply);
 
-                    if(nextPlayer == player)
-                    {
+                    if(nextPlayer == player) {
                         out.println(Commands.BOARD);
                         String currentBoardStr = in.readLine();
                         boolean validMove = false;
-                        while (!validMove)
-                        {
+                        while (!validMove) {
                             long startT = System.currentTimeMillis();
                             //This is the call to the function for making a move.
                             //You only need to change the contents in the getMove()
@@ -295,10 +334,10 @@ public class AIClient implements Runnable
 
                             int cMove = -1;
 
+                            /* The opening handbook is only used if the AI is player number 1 */
                             if (nrOfMoves == 0 && player == 1) {
                                 cMove = findBestAmbo();
-                            }
-                            else {
+                            } else {
                                 cMove = getMove(currentBoard);
                             }
 
@@ -310,15 +349,14 @@ public class AIClient implements Runnable
                             if (nrOfMoves == 0 && player == 1) {
                                 initialMove = cMove;
                             }
-                            
+
                             //Timer stuff
                             long tot = System.currentTimeMillis() - startT;
-                            double e = (double)tot / (double)1000;
-                            
+                            double e = (double) tot / (double) 1000;
+
                             out.println(Commands.MOVE + " " + cMove + " " + player);
                             reply = in.readLine();
-                            if (!reply.startsWith("ERROR"))
-                            {
+                            if (!reply.startsWith("ERROR")) {
                                 validMove = true;
                                 addText("Made move " + cMove + " in " + e + " secs");
                                 nrOfMoves++;
