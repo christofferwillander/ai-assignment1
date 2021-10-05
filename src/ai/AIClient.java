@@ -1,11 +1,10 @@
 package ai;
-
 import java.io.*;
 import java.net.*;
 import javax.swing.*;
 import java.awt.*;
 import kalaha.*;
-
+import java.util.ArrayList;
 /**
  * This is the main class for your Kalaha AI bot. Currently
  * it only makes a random, valid move each turn.
@@ -97,6 +96,87 @@ public class AIClient implements Runnable
         text.append(txt + "\n");
         text.setCaretPosition(text.getDocument().getLength());
     }
+
+    /**
+     *  Function for writing the CSV file for opening handbook.
+     * @param Number stating the ambo that was used for the AI in the opening move.
+     * @param Parameter stating whether or not the AI won using the opening move in question.
+     */
+
+    public void writeCSVFile(int initialMove, boolean didWin) {
+        FileWriter CSVFile;
+        BufferedReader CSVReader;
+        File openingBook = new File("openingbook.csv");
+
+        /* If opening book does not exist, create its initial structure */
+        if (!openingBook.exists()){
+            try {
+                /* CSV structure as follows; Ambo, Wins, Losses */
+                CSVFile = new FileWriter("openingbook.csv");
+                for (int ambo = 1; ambo <= 6; ambo++) {
+                    CSVFile.append(Integer.toString(ambo));
+                    CSVFile.append(",0,0\n");
+                }
+
+                CSVFile.flush();
+                CSVFile.close();
+            } catch (Exception e) {
+                addText("Could not create file for opening handbook.");
+            }
+        }
+
+        /* Attempt to read all lines from the file into an ArrayList */
+        try {
+            CSVReader = new BufferedReader(new FileReader("openingbook.csv"));
+            String row;
+            ArrayList<String> dataValues = new ArrayList();
+            while ((row = CSVReader.readLine()) != null) {
+                String[] data = row.split(",");
+
+                for (int i = 0; i < data.length; i++) {
+                    dataValues.add(data[i]);
+                }
+            }
+            CSVReader.close();
+
+            /* If user won, update the number of wins for the current ambo */
+            if(didWin) {
+                int arrayIndex = initialMove * 3 - 2;
+                int currentScore = Integer.parseInt(dataValues.get(arrayIndex));
+                currentScore++;
+                dataValues.set(arrayIndex, Integer.toString(currentScore));
+            }
+            else { /* If user lost, update the number of losses for the current ambo */
+                int arrayIndex = initialMove * 3 - 1;
+                int currentScore = Integer.parseInt(dataValues.get(arrayIndex));
+                currentScore++;
+                dataValues.set(arrayIndex, Integer.toString(currentScore));
+            }
+
+            /* Write all changes to file */
+            try {
+                CSVFile = new FileWriter("openingbook.csv");
+                for (int i = 0; i < dataValues.size(); i++) {
+                    CSVFile.append(dataValues.get(i));
+
+                    if (i % 3 == 2) {
+                        CSVFile.append("\n");
+                    }
+                    else {
+                        CSVFile.append(",");
+                    }
+                }
+
+                CSVFile.flush();
+                CSVFile.close();
+            } catch (Exception e) {
+                addText("Could not update file for opening handbook.");
+            }
+        }
+        catch(Exception e) {
+            addText("An error occurred when processing the opening handbook.");
+        }
+    }
     
     /**
      * Thread for server communication. Checks when it is this
@@ -106,6 +186,8 @@ public class AIClient implements Runnable
     {
         String reply;
         running = true;
+        int nrOfMoves = 0;
+        int initialMove = -1;
         
         try
         {
@@ -132,10 +214,12 @@ public class AIClient implements Runnable
                     if (w == player)
                     {
                         addText("I won!");
+                        writeCSVFile(initialMove, true);
                     }
                     else
                     {
                         addText("I lost...");
+                        writeCSVFile(initialMove, false);
                     }
                     running = false;
                 }
@@ -165,6 +249,11 @@ public class AIClient implements Runnable
                             //function.
                             GameState currentBoard = new GameState(currentBoardStr);
                             int cMove = getMove(currentBoard);
+
+                            if (nrOfMoves == 0) {
+                                initialMove = cMove;
+                                addText("Initial move was ambo number: " + Integer.toString(cMove));
+                            }
                             
                             //Timer stuff
                             long tot = System.currentTimeMillis() - startT;
@@ -176,6 +265,7 @@ public class AIClient implements Runnable
                             {
                                 validMove = true;
                                 addText("Made move " + cMove + " in " + e + " secs");
+                                nrOfMoves++;
                             }
                         }
                     }
@@ -382,7 +472,7 @@ public class AIClient implements Runnable
         /* Returning the difference in seed values between player 1 and player 2 */
         return player1Seeds - player2Seeds;
     }
-    
+
     /**
      * Returns a random ambo number (1-6) used when making
      * a random move.
