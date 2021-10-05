@@ -1,6 +1,5 @@
 package ai;
 
-import ai.Global;
 import java.io.*;
 import java.net.*;
 import javax.swing.*;
@@ -219,7 +218,7 @@ public class AIClient implements Runnable
         int bestMove = -1;
 
         long startTime = System.currentTimeMillis();
-        long maxSearchTime = 5000; /* N.B. this is time in ms */
+        long maxSearchTime = 4900; /* N.B. this is time in ms - 4.9 sec to keep search time < 5 sec. */
 
         boolean isMaxPlayer = false;
         int curDepth = 0;
@@ -258,10 +257,10 @@ public class AIClient implements Runnable
                 if (newBoard.makeMove(ambo)) {
                     /* This check is implemented to account for when any player gets multiple turns */
                     if (newBoard.getNextPlayer() == 1) {
-                        score = miniMaxi(newBoard, curDepth - 1, isMaxPlayer, alpha, beta, startTime, maxSearchTime);
+                        score = miniMax(newBoard, curDepth - 1, isMaxPlayer, alpha, beta, startTime, maxSearchTime);
                     }
                     if (newBoard.getNextPlayer() == 2) {
-                        score = miniMaxi(newBoard, curDepth - 1, !isMaxPlayer, alpha, beta, startTime, maxSearchTime);
+                        score = miniMax(newBoard, curDepth - 1, !isMaxPlayer, alpha, beta, startTime, maxSearchTime);
                     }
                 }
 
@@ -276,15 +275,12 @@ public class AIClient implements Runnable
             }
         }
 
-        /* addText("Best score: " + Integer.toString(bestScore)); */
-        /* addText("Best move: " + Integer.toString(bestMove)); */
-        /* addText("Reached depth of: " + Integer.toString(curDepth)); */
         return bestMove;
     }
 
     /**
      *
-     * This function implements the means for performing the recursive DFS with alfa-beta pruning used in the MiniMaxi algorithm.
+     * This function implements the means for performing the recursive DFS with alfa-beta pruning used in the MiniMax algorithm.
      * The DFS search is carried out in an iterative deepening fashion.
      *
      * @param currentBoard The current board state.
@@ -297,7 +293,7 @@ public class AIClient implements Runnable
      * @return Returns the best score of the node sub-tree.
      *
      */
-    public int miniMaxi(GameState currentBoard, int depth, boolean isMaxPlayer, int alpha, int beta, long startTime, long maxSearchTime) {
+    public int miniMax(GameState currentBoard, int depth, boolean isMaxPlayer, int alpha, int beta, long startTime, long maxSearchTime) {
         int bestScore;
         int score;
 
@@ -331,10 +327,10 @@ public class AIClient implements Runnable
             if (newBoard.makeMove(ambo)) {
                 /* This check is implemented to account for when any player gets multiple turns */
                 if (newBoard.getNextPlayer() == 1) {
-                    score = miniMaxi(newBoard, depth - 1, isMaxPlayer, alpha, beta, startTime, maxSearchTime);
+                    score = miniMax(newBoard, depth - 1, isMaxPlayer, alpha, beta, startTime, maxSearchTime);
                 }
                 if (newBoard.getNextPlayer() == 2) {
-                    score = miniMaxi(newBoard, depth - 1, !isMaxPlayer, alpha, beta, startTime, maxSearchTime);
+                    score = miniMax(newBoard, depth - 1, !isMaxPlayer, alpha, beta, startTime, maxSearchTime);
                 }
             }
 
