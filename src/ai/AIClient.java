@@ -97,6 +97,50 @@ public class AIClient implements Runnable
         text.setCaretPosition(text.getDocument().getLength());
     }
 
+    public int findBestAmbo() {
+        int bestAmbo = -1;
+        long bestScore = 0;
+        int totalWins;
+        int totalLosses;
+
+        BufferedReader CSVReader;
+        File openingBook = new File("./openingbook.csv");
+
+        /* If opening handbook exists */
+        if (openingBook.exists()) {
+            try {
+                CSVReader = new BufferedReader(new FileReader("./openingbook.csv"));
+                String row;
+                ArrayList<String> dataValues = new ArrayList();
+                while ((row = CSVReader.readLine()) != null) {
+                    String[] data = row.split(",");
+                    for (int i = 0; i < data.length; i++) {
+                        dataValues.add(data[i]);
+                    }
+                }
+                CSVReader.close();
+
+                for (int ambo = 0; ambo < 6; ambo++) {
+                    totalWins = Integer.parseInt(dataValues.get(((ambo + 1) * 3) - 2));
+                    totalLosses = Integer.parseInt(dataValues.get(((ambo + 1) * 3) - 1));
+
+                    if (totalWins > 0 || totalLosses > 0) {
+                        if (totalWins / (totalWins + totalLosses) > bestScore) {
+                            bestAmbo = Integer.parseInt(dataValues.get(((ambo + 1) * 3) - 3));
+                            bestScore = totalWins / (totalWins + totalLosses);
+                        }
+                    }
+                }
+                return bestAmbo;
+            }
+            catch (Exception e) {
+                addText("Failed to process opening handbook.");
+            }
+
+        }
+        return bestAmbo;
+    }
+
     /**
      *  Function for writing the CSV file for opening handbook.
      * @param Number stating the ambo that was used for the AI in the opening move.
@@ -106,13 +150,13 @@ public class AIClient implements Runnable
     public void writeCSVFile(int initialMove, boolean didWin) {
         FileWriter CSVFile;
         BufferedReader CSVReader;
-        File openingBook = new File("openingbook.csv");
+        File openingBook = new File("./openingbook.csv");
 
         /* If opening book does not exist, create its initial structure */
         if (!openingBook.exists()){
             try {
                 /* CSV structure as follows; Ambo, Wins, Losses */
-                CSVFile = new FileWriter("openingbook.csv");
+                CSVFile = new FileWriter("./openingbook.csv");
                 for (int ambo = 1; ambo <= 6; ambo++) {
                     CSVFile.append(Integer.toString(ambo));
                     CSVFile.append(",0,0\n");
@@ -155,7 +199,7 @@ public class AIClient implements Runnable
 
             /* Write all changes to file */
             try {
-                CSVFile = new FileWriter("openingbook.csv");
+                CSVFile = new FileWriter("./openingbook.csv");
                 for (int i = 0; i < dataValues.size(); i++) {
                     CSVFile.append(dataValues.get(i));
 
@@ -248,11 +292,23 @@ public class AIClient implements Runnable
                             //You only need to change the contents in the getMove()
                             //function.
                             GameState currentBoard = new GameState(currentBoardStr);
-                            int cMove = getMove(currentBoard);
 
-                            if (nrOfMoves == 0) {
+                            int cMove = -1;
+
+                            if (nrOfMoves == 0 && player == 1) {
+                                cMove = findBestAmbo();
+                            }
+                            else {
+                                cMove = getMove(currentBoard);
+                            }
+
+                            /* Something went wrong when accessing the opening handbook - use regular MiniMax */
+                            if (cMove == -1) {
+                                cMove = getMove(currentBoard);
+                            }
+
+                            if (nrOfMoves == 0 && player == 1) {
                                 initialMove = cMove;
-                                addText("Initial move was ambo number: " + Integer.toString(cMove));
                             }
                             
                             //Timer stuff
