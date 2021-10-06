@@ -107,6 +107,8 @@ public class AIClient implements Runnable
     {
         String reply;
         running = true;
+        int nrOfMoves = 0;
+        int startingAmbo = 2;
         
         try
         {
@@ -138,6 +140,9 @@ public class AIClient implements Runnable
                     {
                         addText("I lost...");
                     }
+                    out.println("Starting ambo: " + startingAmbo);
+                    out.println("Number of moves: " + nrOfMoves);
+                    out.println("Win(1)/Loss(0): " + player);
                     running = false;
                 }
                 if(reply.equals("0"))
@@ -158,6 +163,7 @@ public class AIClient implements Runnable
                         out.println(Commands.BOARD);
                         String currentBoardStr = in.readLine();
                         boolean validMove = false;
+                        int cMove = -1;
                         while (!validMove)
                         {
                             long startT = System.currentTimeMillis();
@@ -165,13 +171,19 @@ public class AIClient implements Runnable
                             //You only need to change the contents in the getMove()
                             //function.
                             GameState currentBoard = new GameState(currentBoardStr);
-                            int cMove = getMove(currentBoard);
+                            if (nrOfMoves == 0 && player == 1) {
+                            	cMove = startingAmbo;
+                            }
+                            else {
+                            	cMove = getMove(currentBoard);
+                            }
                             
                             //Timer stuff
                             long tot = System.currentTimeMillis() - startT;
                             double e = (double)tot / (double)1000;
                             
                             out.println(Commands.MOVE + " " + cMove + " " + player);
+                            nrOfMoves++;
                             reply = in.readLine();
                             if (!reply.startsWith("ERROR"))
                             {
@@ -396,5 +408,20 @@ public class AIClient implements Runnable
     public int getRandom()
     {
         return 1 + (int)(Math.random() * 6);
+    }
+    
+    private void addResultToCsv(int startingAmbo, int gameResult)
+    {
+    	File openingHandbook = new File("opening-handbook.csv");
+    	FileWriter writer = new java.io.FileWriter(openingHandbook);
+    	/*if (openingHandbook.exists()) {
+    		writer = new FileWriter(openingHandbook, true);
+    		writer.write(startingAmbo + "," + gameResult);
+    		writer.close();
+    	}
+    	else {
+    		writer = new FileWriter(openingHandbook);
+    	}*/
+    	
     }
 }
