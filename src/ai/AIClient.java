@@ -311,6 +311,7 @@ public class AIClient implements Runnable
                 if(reply.equals("0"))
                 {
                     addText("Even game!");
+                    writeCSVFile(initialMove, false);
                     running = false;
                 }
 
