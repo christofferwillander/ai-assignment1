@@ -299,19 +299,25 @@ public class AIClient implements Runnable
                     if (w == player)
                     {
                         addText("I won!");
-                        writeCSVFile(initialMove, true);
+                        if (player == 1) {
+                        	writeCSVFile(initialMove, true);
+                        }
                     }
                     else
                     {
                         addText("I lost...");
-                        writeCSVFile(initialMove, false);
+                        if (player == 1) {
+                        	writeCSVFile(initialMove, false);
+                        }
                     }
                     running = false;
                 }
                 if(reply.equals("0"))
                 {
                     addText("Even game!");
-                    writeCSVFile(initialMove, false);
+                    if (player == 1) {
+                    	writeCSVFile(initialMove, false);
+                    }
                     running = false;
                 }
 
