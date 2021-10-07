@@ -110,7 +110,9 @@ public class AIClient implements Runnable
             CSVFile = new FileWriter("./openingbook.csv");
             for (int ambo = 1; ambo <= 6; ambo++) {
                 CSVFile.append(Integer.toString(ambo));
-                CSVFile.append(",0,0\n");
+                // We have to seed the book so that it already had a total of 2 games per ambo or else we will risk getting a 100% loose ratio. This will cause this particular ambo to never be chosen.
+                // If we have 1,1 instead, we make sure that the win/loose ratio is in equilibrium (starts with 50% chance to win/loose on each opening move).
+                CSVFile.append(",1,1\n");
             }
 
             CSVFile.flush();
@@ -129,10 +131,10 @@ public class AIClient implements Runnable
      */
     public int findBestAmbo() {
         int bestAmbo = -1;
-        long bestScore = 0;
-        int totalWins;
-        int totalLosses;
-        int totalGames = 0;
+        float bestWinRatio = 0; // 0%
+        float winRatio = 0;
+        int totalWins = 0;
+        int totalLosses = 0;
 
         BufferedReader CSVReader;
         File openingBook = new File("./openingbook.csv");
@@ -142,7 +144,7 @@ public class AIClient implements Runnable
             try {
                 CSVReader = new BufferedReader(new FileReader("./openingbook.csv"));
                 String row;
-                ArrayList<String> dataValues = new ArrayList();
+                ArrayList<String> dataValues = new ArrayList<String>();
                 while ((row = CSVReader.readLine()) != null) {
                     String[] data = row.split(",");
                     for (int i = 0; i < data.length; i++) {
@@ -154,36 +156,42 @@ public class AIClient implements Runnable
                 for (int ambo = 0; ambo < 6; ambo++) {
                     totalWins = Integer.parseInt(dataValues.get(((ambo + 1) * 3) - 2));
                     totalLosses = Integer.parseInt(dataValues.get(((ambo + 1) * 3) - 1));
-                    totalGames += totalWins;
-                    totalGames += totalLosses;
 
-                    if (totalWins > 0 || totalLosses > 0) {
-                        if (totalWins / (totalWins + totalLosses) > bestScore) {
-                            bestAmbo = Integer.parseInt(dataValues.get(((ambo + 1) * 3) - 3));
-                            bestScore = totalWins / (totalWins + totalLosses);
-                        }
+                    // Check which opening move that has the best win ratio:
+                    winRatio = (float)totalWins / (float)(totalWins + totalLosses);
+                    if (winRatio > bestWinRatio) {
+                        bestAmbo = Integer.parseInt(dataValues.get(((ambo + 1) * 3) - 3));
+                        bestWinRatio = winRatio;
                     }
+                    /* NOTE! If two or more ambos have the same win ratio which is the best, the FIRST one of them will be chosen in sequence with the for-loop.
+                     * because we are using ">" instead of ">=".
+                     */
                 }
+                
+                addText("Selected ambo '" + bestAmbo + "' as the opening move with a " + (int)(bestWinRatio * 100) + "% win ratio.");
 
                 /* If there is not enough moves in the opening handbook, resort to MiniMax for further training */
-                if (totalGames <= 100) {
+                /*if (totalGames <= 100) {
                     bestAmbo = -1;
                     addText("Not enough data present for opening handbook. Switching to MiniMax.");
                 }
                 else if (totalGames > 100 && (bestAmbo >=1 && bestAmbo <= 6))  {
                     addText("Choosing first move according to opening handbook: ambo number " + Integer.toString(bestAmbo));
-                }
+                }*/
 
                 return bestAmbo;
             }
             catch (Exception e) {
-                addText("Failed to process opening handbook.");
+                addText("Failed to process opening handbook. Selecting random opening move.");
+                bestAmbo = 1 + (int)(Math.random() * 6);
             }
 
         }
         else { /* If opening handbook file was not yet created */
+        	addText("Opening handbook does not exist. Choosing a random opening move.");
+        	bestAmbo = 1 + (int)(Math.random() * 6);
             if (createCSVFile()) {
-                addText("Not enough data present for opening handbook. Switching to MiniMax.");
+                addText("Successfully created a new opening handbook.");
             }
         }
         return bestAmbo;
@@ -216,7 +224,7 @@ public class AIClient implements Runnable
             try {
                 CSVReader = new BufferedReader(new FileReader("openingbook.csv"));
                 String row;
-                ArrayList<String> dataValues = new ArrayList();
+                ArrayList<String> dataValues = new ArrayList<String>();
                 while ((row = CSVReader.readLine()) != null) {
                     String[] data = row.split(",");
 
