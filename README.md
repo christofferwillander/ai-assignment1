@@ -12,16 +12,19 @@ The solution consists of a *search algorithm* and a *opening move selector*.
  - Has a 5 second limit before the optimal solution that was found is selected.
 
 ### Opening move selector
-In order to choose the optimal opening move it uses a opening handbook. The handbook is written and used in a csv-format.
+In order to choose the optimal opening move it uses a opening handbook. The handbook uses a csv-format to symbolize the win/loose relationship for each ambo.
 
 Example:
-------------------
+```
+amboNumber,numberOfWins,numberOfLossesAndTies
+```
+```
 1,1,2
 2,1,2
 3,1,2
 4,1,2
 5,29,5
 6,1,1
-------------------
+```
 
 The ambo with the best win/loose ratio is selected as the opening move.
