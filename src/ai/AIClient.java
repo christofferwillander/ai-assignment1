@@ -110,8 +110,9 @@ public class AIClient implements Runnable
             CSVFile = new FileWriter("./openingbook.csv");
             for (int ambo = 1; ambo <= 6; ambo++) {
                 CSVFile.append(Integer.toString(ambo));
-                // We have to seed the book so that it already had a total of 2 games per ambo or else we will risk getting a 100% loose ratio. This will cause this particular ambo to never be chosen.
-                // If we have 1,1 instead, we make sure that the win/loose ratio is in equilibrium (starts with 50% chance to win/loose on each opening move).
+                /* We have to seed the book so that it already had a total of 2 games per ambo or else we will risk getting a 100% loose ratio. This will cause this particular ambo to never be chosen.
+                 * If we have 1,1 instead, we make sure that the win/loose ratio is in equilibrium (starts with 50% chance to win/loose on each opening move).
+                 */
                 CSVFile.append(",1,1\n");
             }
 
@@ -169,15 +170,6 @@ public class AIClient implements Runnable
                 }
                 
                 addText("Selected ambo '" + bestAmbo + "' as the opening move with a " + (int)(bestWinRatio * 100) + "% win ratio.");
-
-                /* If there is not enough moves in the opening handbook, resort to MiniMax for further training */
-                /*if (totalGames <= 100) {
-                    bestAmbo = -1;
-                    addText("Not enough data present for opening handbook. Switching to MiniMax.");
-                }
-                else if (totalGames > 100 && (bestAmbo >=1 && bestAmbo <= 6))  {
-                    addText("Choosing first move according to opening handbook: ambo number " + Integer.toString(bestAmbo));
-                }*/
 
                 return bestAmbo;
             }
