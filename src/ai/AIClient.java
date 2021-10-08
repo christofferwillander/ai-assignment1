@@ -353,6 +353,7 @@ public class AIClient implements Runnable
                                 cMove = getMove(currentBoard);
                             }
 
+                            /* Saving the initial move for player 1 (AI) - in order to be able to write stats to handbook after game has ended */
                             if (nrOfMoves == 0 && player == 1) {
                                 initialMove = cMove;
                             }
