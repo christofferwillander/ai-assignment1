@@ -110,8 +110,8 @@ public class AIClient implements Runnable
             CSVFile = new FileWriter("./openingbook.csv");
             for (int ambo = 1; ambo <= 6; ambo++) {
                 CSVFile.append(Integer.toString(ambo));
-                /* We have to seed the book so that it already had a total of 2 games per ambo or else we will risk getting a 100% loose ratio. This will cause this particular ambo to never be chosen.
-                 * If we have 1,1 instead, we make sure that the win/loose ratio is in equilibrium (starts with 50% chance to win/loose on each opening move).
+                /* We have to seed the book so that it already had a total of 2 games per ambo or else we will risk getting a 100% lose ratio. This will cause this particular ambo to never be chosen.
+                 * If we have 1,1 instead, we make sure that the win/lose ratio is in equilibrium (starts with 50% chance to win/lose on each opening move).
                  */
                 CSVFile.append(",1,1\n");
             }
@@ -127,7 +127,7 @@ public class AIClient implements Runnable
 
     /**
      * Function for finding the best move according to the opening handbook.
-     * @return Returns the best ambo (if the entries are more than 100 in the book). Otherwise -1.
+     * @return Returns the best ambo.
      * Returns -1 if an error occurs, using MiniMax instead.
      */
     public int findBestAmbo() {
@@ -191,8 +191,8 @@ public class AIClient implements Runnable
 
     /**
      *  Function for writing the CSV file for opening handbook.
-     * @param Number stating the ambo that was used for the AI in the opening move.
-     * @param Parameter stating whether or not the AI won using the opening move in question.
+     * @param initialMove stating the ambo that was used for the AI in the opening move.
+     * @param playerWon stating whether or not the AI won using the opening move in question.
      */
 
     public void writeCSVFile(int initialMove, boolean playerWon) {
@@ -214,7 +214,7 @@ public class AIClient implements Runnable
         if (fileCreated) {
             /* Attempt to read all lines from the file into an ArrayList */
             try {
-                CSVReader = new BufferedReader(new FileReader("openingbook.csv"));
+                CSVReader = new BufferedReader(new FileReader("./openingbook.csv"));
                 String row;
                 ArrayList<String> dataValues = new ArrayList<String>();
                 while ((row = CSVReader.readLine()) != null) {
@@ -443,6 +443,7 @@ public class AIClient implements Runnable
                 } else {
                     score = Integer.MAX_VALUE;
                 }
+
                 /* Check if move is possible, and if so...*/
 
                 if (newBoard.makeMove(ambo)) {
