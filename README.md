@@ -8,11 +8,11 @@ Oliver Byström and Christoffer Willander
 The solution consists of a *search algorithm* and a *opening move selector*.
 
 ### AI Search algorithm
- - Searches for otimal solution using iterative deepening search.
+ - Searches for optimal solution using iterative deepening search.
  - Has a 5 second limit before the optimal solution that was found is selected.
 
 ### Opening move selector
-In order to choose the optimal opening move it uses a opening handbook. The handbook uses a csv-format to symbolize the win/loose relationship for each ambo.
+In order to choose the optimal opening move it uses a opening handbook. The handbook uses a csv-format to symbolize the win/lose relationship for each ambo.
 
 Example:
 ```
@@ -27,4 +27,4 @@ amboNumber,numberOfWins,numberOfLossesAndTies
 6,1,1
 ```
 
-The ambo with the best win/loose ratio is selected as the opening move.
+The ambo with the best win/lose ratio is selected as the opening move.
